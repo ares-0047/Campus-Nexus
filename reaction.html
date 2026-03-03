@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Nexus - Lightning Reflex</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background-color: #1a1a2e; color: white; }
+        
+        nav { background-color: #0f3460; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .back-btn { background-color: transparent; color: white; border: 1px solid white; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        
+        #gameArea { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; transition: background-color 0.1s; cursor: pointer; }
+        
+        #statusText { font-size: 32px; font-weight: bold; margin-bottom: 20px; pointer-events: none; }
+        #subText { font-size: 18px; color: #a2a2bd; pointer-events: none; }
+        
+        /* Game States */
+        .state-waiting { background-color: #1a1a2e; }
+        .state-ready { background-color: #c0392b; } /* Red - Wait! */
+        .state-go { background-color: #27ae60; } /* Green - CLICK! */
+        .state-finished { background-color: #2980b9; } /* Blue - Results */
+    </style>
+</head>
+<body>
+
+    <nav>
+        <h2>⚡ Lightning Reflex</h2>
+        <button class="back-btn" onclick="window.location.href='games.html'">Quit Match</button>
+    </nav>
+
+    <div id="gameArea" class="state-waiting">
+        <div id="statusText">Connecting to matchmaking...</div>
+        <div id="subText">Please wait.</div>
+    </div>
+
+    <script type="module" src="./reaction.js"></script>
+
+</body>
+</html>

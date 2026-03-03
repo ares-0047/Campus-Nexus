@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Nexus - Dashboard</title>
+    <link rel="stylesheet" href="global.css">
+    <script src="theme.js" defer></script>
+    <style>
+        /* Only page-specific layout tweaks go here now! */
+        .welcome-section { margin-bottom: 3rem; text-align: center; }
+        .welcome-section h2 { font-size: 2.5rem; color: var(--nav-bg); margin-bottom: 0.5rem; }
+        .welcome-section p { font-size: 1.1rem; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <h1>🎓 Campus Nexus</h1>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button id="themeToggle" class="btn btn-outline" style="border-radius: 50%; padding: 0.5rem; width: 40px; height: 40px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;">🌙</button>
+            <button id="adminBtn" class="btn btn-admin" style="display: none;">⚙️ Admin Panel</button>
+            <button id="logoutBtn" class="btn btn-danger">Logout</button>
+        </div>
+    </nav>
+    
+
+    <div class="container">
+        <div class="welcome-section animate-entry">
+            <h2 id="welcomeMessage">Loading...</h2>
+            <p>Select a portal to get started.</p>
+        </div>
+
+        <div class="grid">
+            <div class="card interactive animate-entry delay-1" onclick="window.location.href='chat.html'">
+                <h3>💬 Global Nexus Chat</h3>
+                <p>Connect with the entire campus. Share updates, ask questions, or hop into a private WebRTC peer-to-peer study room.</p>
+            </div>
+
+            <div class="card interactive animate-entry delay-2" onclick="window.location.href='games.html'">
+                <h3>🎮 Velocity Gaming Hub</h3>
+                <p>Jump into real-time quiz battles, reaction speed tests, or sync up for a live chess match.</p>
+            </div>
+
+            <div class="card interactive animate-entry delay-3" onclick="window.location.href='study.html'">
+                <h3>✍️ Quills Study Hub</h3>
+                <p>Access structured study materials, semester notes, and embedded lectures organized by year and subject.</p>
+            </div>
+
+            <div class="card interactive animate-entry delay-4" onclick="window.location.href='productivity.html'">
+                <h3>⏳ Productivity & Pomodoro</h3>
+                <p>Track your personal to-do list and utilize the built-in focus timer to power through assignments.</p>
+            </div>
+
+            <div class="card interactive animate-entry delay-5" onclick="window.location.href='feedback.html'">
+                <div style="display: flex; flex-direction: column; height: 100%; justify-content: flex-start;">
+                    <h3 style="color: var(--secondary);">📬 Feedback & Support</h3>
+                    <p>Found a bug or have a suggestion? Let the admin team know!</p>
+                </div>
+            </div>
+            <div class="card interactive animate-entry delay-4" onclick="window.location.href='private-chat.html'">
+                <div style="display: flex; flex-direction: column; height: 100%; justify-content: flex-start;">
+                    <h3 style="color: var(--primary);">👤 Direct Messages</h3>
+                    <p>Connect one-on-one with other students. Your private conversations are end-to-end encrypted.</p>
+                </div>
+            </div>
+            <div class="animate-entry delay-1" style="margin-bottom: 2.5rem;">
+            <h3 style="margin-bottom: 1rem; color: var(--nav-bg); display: flex; align-items: center; gap: 10px;">
+                📅 Upcoming Campus Events
+            </h3>
+            <div id="eventsFeed" class="grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                <div class="card" style="padding: 1rem; text-align: center; color: var(--text-muted);">
+                    Checking for latest events...
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Using the corrected local paths!
+        import { auth, db } from './firebase-config.js';
+        import { logoutUser } from './auth.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const adminBtn = document.getElementById('adminBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // Check if user is logged in
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                try {
+                    const userDocSnap = await getDoc(doc(db, "users", user.uid));
+                    if (userDocSnap.exists()) {
+                        const userData = userDocSnap.data();
+                        welcomeMessage.innerText = `Welcome back, ${userData.name}!`;
+                        // Unhide Admin button if they have the role
+                        if (userData.role === "admin") adminBtn.style.display = "inline-flex";
+                    }
+                } catch (error) {
+                    welcomeMessage.innerText = "Welcome!";
+                }
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        // Button Event Listeners
+        logoutBtn.addEventListener('click', () => logoutUser());
+        adminBtn.addEventListener('click', () => window.location.href = "admin.html");
+        // Add 'onSnapshot', 'query', 'collection', and 'orderBy' to your Firestore imports if they aren't there!
+import { collection, onSnapshot, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const eventsFeed = document.getElementById('eventsFeed');
+
+function loadEvents() {
+    // Get the 3 most recent events
+    const q = query(collection(db, "events"), orderBy("timestamp", "desc"), limit(3));
+    
+    onSnapshot(q, (snapshot) => {
+        eventsFeed.innerHTML = '';
+        
+        if (snapshot.empty) {
+            eventsFeed.innerHTML = `
+                <div class="card" style="padding: 1rem; text-align: center; grid-column: 1 / -1; background: rgba(255,255,255,0.4);">
+                    <p>No upcoming events right now. Check back later!</p>
+                </div>`;
+            return;
+        }
+
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            const eventCard = document.createElement('div');
+            // We'll use a slightly different style for events to make them stand out
+            eventCard.className = 'card animate-entry';
+            eventCard.style.borderLeft = "5px solid var(--accent)"; // Amber accent to match admin theme
+            
+            eventCard.innerHTML = `
+                <div style="font-size: 0.8rem; font-weight: bold; color: var(--accent); margin-bottom: 5px;">
+                    🗓️ ${data.date}
+                </div>
+                <h4 style="margin-bottom: 5px; color: var(--nav-bg);">${data.title}</h4>
+                <p style="font-size: 0.85rem; line-height: 1.4;">${data.description}</p>
+            `;
+            eventsFeed.appendChild(eventCard);
+        });
+    });
+}
+
+// Call this inside your onAuthStateChanged block
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // ... your existing code ...
+        loadEvents(); // Start the events feed
+    }
+});
+    </script>
+</body>
+</html>

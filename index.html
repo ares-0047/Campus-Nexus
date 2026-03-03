@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Nexus - Login</title>
+    <link rel="stylesheet" href="global.css">
+    <style>
+        /* Page-specific centering */
+        body { display: flex; justify-content: center; align-items: center; }
+        .auth-card { width: 100%; max-width: 400px; text-align: center; }
+        .auth-card h2 { margin-bottom: 1.5rem; color: var(--primary); }
+        .form-input { width: 100%; padding: 0.8rem; margin-bottom: 1rem; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); outline: none; transition: var(--transition); }
+        .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        .toggle-text { margin-top: 1.5rem; font-size: 0.9rem; color: var(--primary); cursor: pointer; text-decoration: none; font-weight: 600; display: inline-block; }
+        .toggle-text:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="card auth-card">
+        <h2 id="form-title">Welcome Back</h2>
+        
+        <input type="text" id="nameInput" class="form-input" placeholder="Full Name (e.g., Ashutosh)" style="display: none;">
+        <input type="email" id="emailInput" class="form-input" placeholder="Student Email" required>
+        <input type="password" id="passwordInput" class="form-input" placeholder="Password" required>
+        
+        <button id="submitBtn" class="btn btn-primary" style="width: 100%;">Login</button>
+        
+        <span class="toggle-text" id="toggleForm">Don't have an account? Sign up</span>
+    </div>
+
+    <script type="module">
+        // Make sure this path points correctly to where your auth.js is saved!
+        import { registerUser, loginUser } from './auth.js';
+        
+        const formTitle = document.getElementById('form-title');
+        const nameInput = document.getElementById('nameInput');
+        const emailInput = document.getElementById('emailInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const toggleFormText = document.getElementById('toggleForm');
+
+        let isLoginMode = true;
+
+        toggleFormText.addEventListener('click', () => {
+            isLoginMode = !isLoginMode;
+            if (isLoginMode) {
+                formTitle.innerText = 'Welcome Back';
+                nameInput.style.display = 'none';
+                submitBtn.innerText = 'Login';
+                toggleFormText.innerText = "Don't have an account? Sign up";
+            } else {
+                formTitle.innerText = 'Create Account';
+                nameInput.style.display = 'block';
+                submitBtn.innerText = 'Sign Up';
+                toggleFormText.innerText = "Already have an account? Login";
+            }
+        });
+
+        submitBtn.addEventListener('click', () => {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            const name = nameInput.value.trim();
+
+            if (!email || !password) return alert("Please fill in both email and password.");
+
+            if (isLoginMode) {
+                loginUser(email, password);
+            } else {
+                if (!name) return alert("Please enter your name to sign up.");
+                registerUser(email, password, name);
+            }
+        });
+    </script>
+</body>
+</html>

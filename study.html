@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Nexus - Quills Study Hub</title>
+    <link rel="stylesheet" href="global.css">
+    <style>
+        .header-section { text-align: center; margin-bottom: 3rem; }
+        .header-section h1 { color: var(--nav-bg); font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .header-section p { color: var(--text-muted); font-size: 1.1rem; }
+
+        /* Card custom elements for study materials */
+        .semester-tag { display: inline-block; background-color: #f1f5f9; color: var(--text-muted); padding: 0.3rem 0.8rem; border-radius: 2rem; font-size: 0.8rem; font-weight: 700; margin-bottom: 1rem; align-self: flex-start; text-transform: uppercase; letter-spacing: 0.5px; }
+        .card-content { display: flex; flex-direction: column; height: 100%; justify-content: space-between; }
+        
+        .empty-state { text-align: center; grid-column: 1 / -1; padding: 3rem; color: var(--text-muted); font-size: 1.1rem; background: var(--surface); border-radius: var(--radius-md); border: 1px dashed #cbd5e1; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <h2>✍️ Quills Study Hub</h2>
+        <button class="btn btn-outline" onclick="window.location.href='dashboard.html'">← Back</button>
+    </nav>
+
+    <div class="container">
+        <div class="header-section">
+            <h1>Academic Resources</h1>
+            <p>Access structured semester notes, tutorials, and curated lectures.</p>
+        </div>
+
+        <div class="grid" id="materialsGrid">
+            <div class="empty-state" id="loadingState">Loading study materials...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const materialsGrid = document.getElementById('materialsGrid');
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) { loadStudyMaterials(); } 
+            else { window.location.href = "login.html"; }
+        });
+
+        function loadStudyMaterials() {
+            const q = query(collection(db, "studyMaterials"), orderBy("timestamp", "desc"));
+            onSnapshot(q, (snapshot) => {
+                materialsGrid.innerHTML = '';
+                
+                if (snapshot.empty) {
+                    materialsGrid.innerHTML = '<div class="empty-state">No study materials uploaded yet. Check back later!</div>';
+                    return;
+                }
+
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const card = document.createElement('div');
+                    card.className = 'card interactive'; // Use our global card classes
+
+                    let btnText = "📄 View Material";
+                    if (data.link.includes('youtube.com') || data.link.includes('youtu.be')) {
+                        btnText = "🎥 Watch Lecture";
+                    }
+
+                    card.innerHTML = `
+                        <div class="card-content">
+                            <div>
+                                <span class="semester-tag">${data.semester}</span>
+                                <h3>${data.subject}</h3>
+                            </div>
+                            <a href="${data.link}" target="_blank" class="btn btn-primary" style="margin-top: 1.5rem; text-align: center;">${btnText}</a>
+                        </div>
+                    `;
+                    materialsGrid.appendChild(card);
+                });
+            }, (error) => {
+                materialsGrid.innerHTML = '<div class="empty-state" style="color: var(--danger);">Failed to load materials.</div>';
+            });
+        }
+    </script>
+</body>
+</html>

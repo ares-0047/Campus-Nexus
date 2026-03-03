@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Nexus - Quiz Battle</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #1a1a2e; color: white; display: flex; flex-direction: column; height: 100vh; }
+        
+        nav { background-color: #0f3460; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .back-btn { background-color: transparent; color: white; border: 1px solid white; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        
+        .container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; max-width: 800px; margin: auto; width: 100%; }
+        
+        /* Scoreboard */
+        .scoreboard { display: flex; justify-content: space-between; width: 100%; margin-bottom: 30px; background: #16213e; padding: 15px 30px; border-radius: 10px; border: 2px solid #e94560; box-sizing: border-box; }
+        .score-box { font-size: 20px; font-weight: bold; }
+        .score-box span { color: #e94560; font-size: 28px; display: block; }
+        
+        /* Game Area */
+        #statusText { font-size: 24px; color: #a2a2bd; margin-bottom: 20px; }
+        
+        #questionArea { display: none; width: 100%; }
+        #questionText { font-size: 28px; margin-bottom: 30px; font-weight: bold; }
+        
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
+        .option-btn { background-color: #0f3460; color: white; border: 2px solid #16213e; padding: 20px; font-size: 18px; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+        .option-btn:hover:not(:disabled) { background-color: #e94560; border-color: #e94560; }
+        .option-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .option-btn.selected { background-color: #e94560; border-color: white; }
+
+        #waitingForOpponent { margin-top: 20px; color: #f1c40f; font-weight: bold; display: none; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <h2>🧠 Quiz Battle</h2>
+        <button class="back-btn" onclick="window.location.href='games.html'">Quit Match</button>
+    </nav>
+
+    <div class="container">
+        <div class="scoreboard" id="scoreboard" style="display: none;">
+            <div class="score-box">You <br><span id="myScore">0</span></div>
+            <div class="score-box">Opponent <br><span id="oppScore">0</span></div>
+        </div>
+
+        <div id="statusText">Connecting to matchmaking...</div>
+
+        <div id="questionArea">
+            <div id="questionText">Loading question...</div>
+            <div class="options-grid" id="optionsGrid">
+                </div>
+            <div id="waitingForOpponent">Waiting for opponent to answer...</div>
+        </div>
+    </div>
+
+    <script type="module" src="./quiz.js"></script>
+
+</body>
+</html>

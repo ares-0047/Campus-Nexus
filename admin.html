@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Nexus - Admin Panel</title>
+    <link rel="stylesheet" href="global.css">
+    <style>
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-main); }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); outline: none; transition: var(--transition); font-family: inherit; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1); }
+        
+        #authOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-main); display: flex; justify-content: center; align-items: center; z-index: 1000; font-size: 1.5rem; font-weight: 700; color: var(--text-main); }
+        
+        /* Feedback Inbox Styles */
+        .feedback-item { padding: 1rem; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); margin-bottom: 1rem; background: var(--bg-main); }
+        .feedback-item.resolved { opacity: 0.6; }
+        .feedback-item p { margin: 0.5rem 0; color: var(--text-main); font-size: 0.95rem; }
+        .feedback-meta { font-size: 0.8rem; color: var(--text-muted); font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .status-badge { padding: 0.2rem 0.6rem; border-radius: 2rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .status-pending { background-color: #fef3c7; color: #d97706; }
+        .status-resolved { background-color: #d1fae5; color: #059669; }
+    </style>
+</head>
+<body>
+
+    <div id="authOverlay">Verifying Admin Credentials...</div>
+
+    <nav style="background-color: var(--accent);">
+        <h2>⚙️ Admin Super Panel</h2>
+        <button class="btn btn-outline" onclick="window.location.href='dashboard.html'">← Back</button>
+    </nav>
+
+    <div class="container" style="max-width: 1400px;">
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+            
+            <div class="card">
+                <h3 style="color: var(--accent); border-bottom: 2px solid #f1f5f9; padding-bottom: 0.8rem; margin-bottom: 1.5rem;">📅 Add Campus Event</h3>
+                <div class="form-group"><label>Event Title</label><input type="text" id="eventTitle" class="form-input" placeholder="e.g., Velocity Tournament"></div>
+                <div class="form-group"><label>Date</label><input type="date" id="eventDate" class="form-input"></div>
+                <div class="form-group"><label>Description</label><textarea id="eventDesc" class="form-textarea" rows="3" placeholder="Event details..."></textarea></div>
+                <button class="btn btn-admin" id="submitEventBtn" style="width: 100%;">Publish Event</button>
+            </div>
+
+            <div class="card">
+                <h3 style="color: var(--accent); border-bottom: 2px solid #f1f5f9; padding-bottom: 0.8rem; margin-bottom: 1.5rem;">📚 Upload Material</h3>
+                <div class="form-group">
+                    <label>Year & Semester</label>
+                    <select id="studySem" class="form-select">
+                        <option>Year 1 - Sem 1</option><option>Year 1 - Sem 2</option><option>Year 2 - Sem 3</option><option>Year 2 - Sem 4</option><option>Year 3 - Sem 5</option><option>Year 3 - Sem 6</option><option>Year 4 - Sem 7</option><option>Year 4 - Sem 8</option><option>Extra Curricular</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Subject</label><input type="text" id="studySubject" class="form-input" placeholder="e.g., Data Structures"></div>
+                <div class="form-group"><label>Resource Link</label><input type="url" id="studyLink" class="form-input" placeholder="https://..."></div>
+                <button class="btn btn-admin" id="submitStudyBtn" style="width: 100%;">Upload Resource</button>
+            </div>
+
+            <div class="card" style="grid-column: span 1; max-height: 600px; overflow-y: auto;">
+                <h3 style="color: var(--accent); border-bottom: 2px solid #f1f5f9; padding-bottom: 0.8rem; margin-bottom: 1.5rem;">📥 Student Feedback Inbox</h3>
+                <div id="feedbackList">
+                    <div style="text-align: center; color: var(--text-muted); font-size: 0.9rem;">Loading messages...</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // 1. Admin Verification
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const docSnap = await getDoc(doc(db, "users", user.uid));
+                if (docSnap.exists() && docSnap.data().role === "admin") {
+                    document.getElementById('authOverlay').style.display = 'none';
+                    loadFeedback(); // Load the inbox!
+                } else { 
+                    alert("Access Denied."); window.location.href = "dashboard.html"; 
+                }
+            } else window.location.href = "index.html";
+        });
+
+        // 2. Event Upload Logic
+        document.getElementById('submitEventBtn').addEventListener('click', async () => {
+            const title = document.getElementById('eventTitle').value, date = document.getElementById('eventDate').value, desc = document.getElementById('eventDesc').value;
+            if (!title || !date || !desc) return alert("Fill all fields.");
+            await addDoc(collection(db, "events"), { title, date, description: desc, createdBy: auth.currentUser.uid, timestamp: serverTimestamp() });
+            alert("Event published!");
+        });
+
+        // 3. Study Material Upload Logic
+        document.getElementById('submitStudyBtn').addEventListener('click', async () => {
+            const sem = document.getElementById('studySem').value, subject = document.getElementById('studySubject').value, link = document.getElementById('studyLink').value;
+            if (!subject || !link) return alert("Fill all fields.");
+            await addDoc(collection(db, "studyMaterials"), { semester: sem, subject, link, uploadedBy: auth.currentUser.uid, timestamp: serverTimestamp() });
+            alert("Material uploaded!");
+        });
+
+        // 4. NEW: Feedback Inbox Logic
+        function loadFeedback() {
+            const feedbackList = document.getElementById('feedbackList');
+            const q = query(collection(db, "feedback"), orderBy("timestamp", "desc"));
+            
+            onSnapshot(q, (snapshot) => {
+                feedbackList.innerHTML = '';
+                if (snapshot.empty) {
+                    feedbackList.innerHTML = '<div style="text-align: center; color: var(--text-muted);">No feedback yet.</div>';
+                    return;
+                }
+
+                snapshot.forEach((fbDoc) => {
+                    const data = fbDoc.data();
+                    const isResolved = data.status === "resolved";
+                    
+                    const div = document.createElement('div');
+                    div.className = `feedback-item ${isResolved ? 'resolved' : ''}`;
+                    
+                    div.innerHTML = `
+                        <div class="feedback-meta">
+                            <span>From: ${data.userName || 'Student'}</span>
+                            <span class="status-badge ${isResolved ? 'status-resolved' : 'status-pending'}">${data.status}</span>
+                        </div>
+                        <p>"${data.message}"</p>
+                        ${!isResolved ? `<button class="btn btn-outline" style="width: 100%; border-color: var(--secondary); color: var(--secondary); padding: 0.4rem;" onclick="resolveFeedback('${fbDoc.id}')">Mark as Resolved</button>` : ''}
+                    `;
+                    feedbackList.appendChild(div);
+                });
+            });
+        }
+
+        // Attach function to window so the inline HTML button can see it
+        window.resolveFeedback = async (feedbackId) => {
+            try {
+                await updateDoc(doc(db, "feedback", feedbackId), { status: "resolved" });
+            } catch (error) {
+                console.error("Error resolving feedback:", error);
+            }
+        };
+    </script>
+</body>
+</html>

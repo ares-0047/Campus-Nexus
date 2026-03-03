@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Nexus - Grandmaster Chess</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #1a1a2e; color: white; display: flex; flex-direction: column; height: 100vh; }
+        nav { background-color: #0f3460; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .back-btn { background-color: transparent; color: white; border: 1px solid white; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        
+        .container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        
+        #statusText { font-size: 24px; color: #e94560; margin-bottom: 20px; font-weight: bold; text-align: center;}
+        #colorInfo { font-size: 18px; color: #a2a2bd; margin-bottom: 20px; }
+        
+        /* The Board Container */
+        #myBoard { width: 400px; margin: auto; border: 4px solid #0f3460; border-radius: 5px; background: white;}
+        
+        @media (max-width: 500px) { #myBoard { width: 100%; max-width: 350px; } }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <h2>♟️ Grandmaster Chess</h2>
+        <button class="back-btn" onclick="window.location.href='games.html'">Quit Match</button>
+    </nav>
+
+    <div class="container">
+        <div id="statusText">Connecting to matchmaking...</div>
+        <div id="colorInfo"></div>
+        
+        <div id="myBoard"></div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+
+    <script type="module" src="./chess.js"></script>
+
+</body>
+</html>

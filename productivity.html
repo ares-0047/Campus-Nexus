@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Nexus - Productivity</title>
+    <link rel="stylesheet" href="global.css">
+    <style>
+        /* Specific layout for productivity tools */
+        .timer-display { font-size: 4.5rem; font-weight: 700; color: var(--primary); margin: 1.5rem 0; font-variant-numeric: tabular-nums; letter-spacing: -2px; text-align: center; }
+        .timer-controls { display: flex; justify-content: center; gap: 0.8rem; flex-wrap: wrap; }
+        
+        .todo-input-group { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+        #taskInput { flex: 1; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); outline: none; transition: var(--transition); }
+        #taskInput:focus { border-color: var(--primary); }
+        
+        .task-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+        .task-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-main); border-radius: var(--radius-sm); border: 1px solid #e2e8f0; transition: var(--transition); }
+        .task-item:hover { border-color: #cbd5e1; }
+        .task-item.completed span { text-decoration: line-through; color: var(--text-muted); }
+        
+        .task-actions button { background: none; border: none; cursor: pointer; padding: 0.4rem; border-radius: 4px; transition: 0.2s; }
+        .task-actions button:hover { background-color: #e2e8f0; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <h2>⏳ Productivity Hub</h2>
+        <button class="btn btn-outline" onclick="window.location.href='dashboard.html'">← Back</button>
+    </nav>
+
+    <div class="container">
+        <div class="grid" style="align-items: start;">
+            
+            <div class="card" style="text-align: center;">
+                <h3>Focus Timer</h3>
+                <p>25-minute Pomodoro sessions</p>
+                <div class="timer-display" id="timeDisplay">25:00</div>
+                <div class="timer-controls">
+                    <button class="btn btn-primary" id="startTimerBtn">Start</button>
+                    <button class="btn btn-admin" id="pauseTimerBtn">Pause</button>
+                    <button class="btn btn-danger" id="resetTimerBtn">Reset</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>My Tasks</h3>
+                <p style="margin-bottom: 1rem;">Your personal study checklist</p>
+                <div class="todo-input-group">
+                    <input type="text" id="taskInput" placeholder="What needs to be done?">
+                    <button class="btn btn-primary" id="addTaskBtn">Add</button>
+                </div>
+                <ul class="task-list" id="taskList">
+                    </ul>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db } from '../js/firebase-config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                loadTasks();
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        // --- POMODORO LOGIC ---
+        const timeDisplay = document.getElementById('timeDisplay');
+        let timerInterval, timeLeft = 25 * 60, isRunning = false;
+
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        document.getElementById('startTimerBtn').addEventListener('click', () => {
+            if (isRunning) return;
+            isRunning = true;
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) { timeLeft--; updateDisplay(); } 
+                else { clearInterval(timerInterval); isRunning = false; alert("Time's up! Take a break."); }
+            }, 1000);
+        });
+
+        document.getElementById('pauseTimerBtn').addEventListener('click', () => { clearInterval(timerInterval); isRunning = false; });
+        document.getElementById('resetTimerBtn').addEventListener('click', () => { clearInterval(timerInterval); isRunning = false; timeLeft = 25 * 60; updateDisplay(); });
+
+        // --- TO-DO LOGIC ---
+        const taskInput = document.getElementById('taskInput');
+        const taskList = document.getElementById('taskList');
+
+        document.getElementById('addTaskBtn').addEventListener('click', async () => {
+            const taskText = taskInput.value.trim();
+            if (!taskText || !currentUser) return;
+            taskInput.value = "";
+            try {
+                await addDoc(collection(db, "todos"), { userId: currentUser.uid, task: taskText, completed: false, timestamp: serverTimestamp() });
+            } catch (error) { console.error("Error adding task:", error); }
+        });
+
+        function loadTasks() {
+            const q = query(collection(db, "todos"), where("userId", "==", currentUser.uid), orderBy("timestamp", "desc"));
+            onSnapshot(q, (snapshot) => {
+                taskList.innerHTML = '';
+                snapshot.forEach((todoDoc) => {
+                    const data = todoDoc.data();
+                    const li = document.createElement('li');
+                    li.className = `task-item ${data.completed ? 'completed' : ''}`;
+                    li.innerHTML = `
+                        <span>${data.task}</span>
+                        <div class="task-actions">
+                            <button onclick="toggleTask('${todoDoc.id}', ${data.completed})">✔️</button>
+                            <button onclick="deleteTask('${todoDoc.id}')">🗑️</button>
+                        </div>
+                    `;
+                    taskList.appendChild(li);
+                });
+            });
+        }
+
+        window.toggleTask = async (taskId, currentStatus) => await updateDoc(doc(db, "todos", taskId), { completed: !currentStatus });
+        window.deleteTask = async (taskId) => await deleteDoc(doc(db, "todos", taskId));
+    </script>
+</body>
+</html>
